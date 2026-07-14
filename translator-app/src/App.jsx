@@ -1,125 +1,143 @@
-import { useState } from "react";
-import axios from "axios";
+import React from "react";
+import { useTranslate } from "./hooks/useTranslate";
+import { LanguageSelector } from "./components/LanguageSelector";
+import { TranslatorInput } from "./components/TranslatorInput";
+import { TranslatorOutput } from "./components/TranslatorOutput";
+import { HistoryList } from "./components/HistoryList";
+import { LANGUAGES } from "./constants/languages";
 
+/**
+ * Main application component layout.
+ * Combines all translator views under a dark mode glassmorphism theme.
+ */
 function App() {
-  const [inputText, setInputText] = useState("");
-  const [targetLang, setTargetLang] = useState("hi");
-  const [translatedText, setTranslatedText] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // Added Kannada, Telugu, Tamil + more Indian languages
-  const languages = [
-    { code: "hi", name: "Hindi (हिन्दी)" },
-    { code: "kn", name: "Kannada (ಕನ್ನಡ)" },
-    { code: "te", name: "Telugu (తెలుగు)" },
-    { code: "ta", name: "Tamil (தமிழ்)" },
-    { code: "ml", name: "Malayalam (മലയാളം)" },
-    { code: "bn", name: "Bengali (বাংলা)" },
-    { code: "gu", name: "Gujarati (ગુજરાતી)" },
-    { code: "pa", name: "Punjabi (ਪੰਜਾਬੀ)" },
-    { code: "mr", name: "Marathi (मराठी)" },
-    { code: "es", name: "Spanish (Español)" },
-    { code: "fr", name: "French (Français)" },
-    { code: "de", name: "German (Deutsch)" },
-    { code: "it", name: "Italian (Italiano)" },
-    { code: "pt", name: "Portuguese (Português)" },
-    { code: "ru", name: "Russian (Русский)" },
-    { code: "zh", name: "Chinese (中文)" },
-    { code: "ja", name: "Japanese (日本語)" },
-    { code: "ko", name: "Korean (한국어)" },
-    { code: "ar", name: "Arabic (العربية)" },
-    { code: "tr", name: "Turkish (Türkçe)" },
-  ];
-
-  const handleTranslate = async () => {
-    if (!inputText.trim()) {
-      setTranslatedText("Please enter some text to translate");
-      return;
-    }
-
-    setLoading(true);
-    setTranslatedText("");
-
-    try {
-      const response = await axios.get("https://api.mymemory.translated.net/get", {
-        params: {
-          q: inputText,
-          langpair: `en|${targetLang}`,
-          mt: "1",
-          de: "a@b.com",
-        },
-      });
-
-      const result = response.data.responseData?.translatedText || "No translation found";
-      setTranslatedText(result);
-    } catch (error) {
-      console.error(error);
-      setTranslatedText("Translation failed – check your internet connection");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    inputText,
+    setInputText,
+    sourceLang,
+    setSourceLang,
+    targetLang,
+    setTargetLang,
+    translatedText,
+    loading,
+    error,
+    history,
+    triggerTranslation,
+    clearHistory,
+    restoreTranslation,
+    swapLanguages,
+  } = useTranslate();
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-fixed relative"
-      style={{
-        backgroundImage:
-          "url('https://media.istockphoto.com/id/493797345/photo/thank-you.jpg?s=1024x1024&w=is&k=20&c=8mYtIGUjodcDRMb6sasBQIjNRfTOOjXA18ruNvxv1aQ=')",
-      }}
-    >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black opacity-60"></div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4 py-12 relative overflow-hidden font-sans select-none">
+      {/* Gradient Ambient Lighting (Mesh Design) */}
+      <div className="absolute top-[-10%] left-[-10%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] rounded-full bg-indigo-600/10 blur-[100px] md:blur-[150px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] rounded-full bg-purple-600/10 blur-[100px] md:blur-[150px] pointer-events-none"></div>
 
-      {/* Main content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
-        <div className="max-w-5xl w-full">
-          <h1 className="text-5xl md:text-6xl font-bold text-center text-white mb-10 drop-shadow-2xl">
-            Text Translator
-          </h1>
+      {/* Main Workspace Frame */}
+      <div className="relative z-10 w-full max-w-5xl">
+        <h1 className="text-4xl md:text-6xl font-extrabold text-center mb-3 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-indigo-100 to-purple-300 drop-shadow-sm">
+          TransVerse
+        </h1>
+        <p className="text-center text-indigo-200/50 mb-10 text-xs md:text-base font-medium tracking-wider max-w-md mx-auto">
+          Experience real-time, context-aware translations powered by debounced live queries and intelligent caching.
+        </p>
 
-          <div className="bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl p-8 md:p-12 border border-white/30">
-            <div className="grid md:grid-cols-2 gap-10">
-              {/* Input Side */}
-              <div className="space-y-6">
-                <textarea
-                  className="w-full h-64 p-6 bg-white/90 backdrop-blur rounded-2xl border border-white/50 text-lg resize-none focus:outline-none focus:ring-4 focus:ring-indigo-400 shadow-lg"
-                  placeholder="Type or paste your English text here..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+        {/* Central Translation Console Card */}
+        <div className="bg-slate-900/60 backdrop-blur-xl rounded-3xl p-6 md:p-10 border border-slate-800/80 shadow-2xl shadow-slate-950/50">
+          
+          {/* Header Controls (Language Selectors & Swap) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+            <LanguageSelector
+              id="source-lang-select"
+              label="Source Language"
+              value={sourceLang}
+              onChange={setSourceLang}
+              languages={LANGUAGES}
+            />
+
+            {/* Swap Button with 180deg Rotation on hover */}
+            <button
+              onClick={swapLanguages}
+              className="mt-6 sm:mt-5 p-3 rounded-full bg-slate-800/80 border border-slate-700/50 text-indigo-300 hover:text-white hover:bg-slate-700 hover:border-indigo-500/30 transition-all duration-300 transform hover:rotate-180 active:scale-95 cursor-pointer shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label="Swap source and target languages"
+              title="Swap Languages"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
                 />
+              </svg>
+            </button>
 
-                <select
-                  className="w-full p-4 bg-white/90 backdrop-blur rounded-xl border border-white/50 text-lg focus:outline-none focus:ring-4 focus:ring-indigo-400"
-                  value={targetLang}
-                  onChange={(e) => setTargetLang(e.target.value)}
-                >
-                  {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.name}
-                    </option>
-                  ))}
-                </select>
+            <LanguageSelector
+              id="target-lang-select"
+              label="Target Language"
+              value={targetLang}
+              onChange={setTargetLang}
+              languages={LANGUAGES}
+            />
+          </div>
 
-                <button
-                  onClick={handleTranslate}
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-5 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-xl text-xl disabled:opacity-70"
-                >
-                  {loading ? "Translating..." : "Translate Now"}
-                </button>
+          {/* Text Areas (Input and Output Grid) */}
+          <div className="grid md:grid-cols-2 gap-6">
+            
+            {/* Input Section */}
+            <div className="flex flex-col space-y-2">
+              <label htmlFor="translation-input" className="text-xs font-semibold text-indigo-300/30 uppercase tracking-widest pl-1">
+                Input Text
+              </label>
+              <TranslatorInput
+                id="translation-input"
+                value={inputText}
+                onChange={setInputText}
+                placeholder="Type or paste text here to translate in real-time..."
+              />
+            </div>
+
+            {/* Output Section */}
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center justify-between pl-1">
+                <label className="text-xs font-semibold text-indigo-300/30 uppercase tracking-widest">
+                  Translation
+                </label>
+                {/* Manual Force Translation Action */}
+                {inputText.trim() && (
+                  <button
+                    onClick={triggerTranslation}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 font-bold tracking-wider hover:underline transition-all cursor-pointer"
+                    title="Force immediate translation bypassing the debounce delay"
+                  >
+                    Force Translate
+                  </button>
+                )}
               </div>
-
-              {/* Output Side */}
-              <div className="flex flex-col">
-                <div className="flex-1 bg-white/90 backdrop-blur rounded-2xl p-8 border border-white/50 min-h-64 flex items-start justify-start shadow-lg">
-                  <p className="text-xl text-gray-800 leading-relaxed">
-                    {translatedText || "Your translation will appear here..."}
-                  </p>
-                </div>
-              </div>
+              <TranslatorOutput
+                translatedText={translatedText}
+                loading={loading}
+                error={error}
+                targetLang={targetLang}
+                onRetry={triggerTranslation}
+              />
             </div>
           </div>
+
+          {/* History Widget */}
+          <HistoryList
+            history={history}
+            onRestore={restoreTranslation}
+            onClear={clearHistory}
+            languages={LANGUAGES}
+          />
         </div>
       </div>
     </div>
